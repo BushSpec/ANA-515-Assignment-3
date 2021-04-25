@@ -1,0 +1,70 @@
+getwd()
+setwd("C:/Users/Ani Gesheva/Dropbox (Personal)/Classes/McDaniel/Data Storage/Markdown 3")
+getwd()
+library("readr")
+library("dplyr")
+library("lubridate")
+install.packages("tidyverse") 
+library("tidyverse")
+library("stringr")
+
+storms <- read_csv("StormEvents_details-ftp_v1.0_d1984_c20170717.csv.gz")
+
+class(storms$BEGIN_DATE_TIME)
+mystorms <- mutate(.data = storms,BEGIN_DATE_TIME=dmy_hms(BEGIN_DATE_TIME), END_DATE_TIME=dmy_hms(END_DATE_TIME))
+class(mystorms$BEGIN_DATE_TIME)
+
+select(.data = mystorms, BEGIN_DATE_TIME, END_DATE_TIME, EPISODE_ID,  EVENT_ID,STATE,STATE_FIPS,EVENT_TYPE,CZ_TYPE,CZ_FIPS, CZ_NAME, SOURCE, BEGIN_LAT, BEGIN_LON,END_LAT,END_LON )
+
+class(mystorms$BEGIN_DATE_TIME) 
+
+mystorms <- mutate(.data = mystorms, 
+       STATE=str_to_title(string=STATE))
+mystorms$STATE[1:10]
+
+mystorms <- mutate(.data = mystorms, 
+                 SZ_NAME=str_to_title(string=CZ_NAME))
+mystorms$SZ_NAME[1:10]
+
+#Limit to the events listed by county FIPS (CZ_TYPE of “C”) and then remove the CZ_TYPE column
+
+mystorms <- filter(.data = mystorms, 
+                     CZ_TYPE == "C")
+head(x = mystorms)
+
+mystorms$CZ_TYPE <- NULL
+
+#Pad the state and county FIPS with a “0” at the beginning (hint: there’s a function in stringr to do this) and then unite the two columns to make one fips column with 
+#the 5-digit county FIPS code (5 points)
+
+str_pad(mystorms$STATE_FIPS, width=3, side= "left", pad = "0")
+str_pad(mystorms$CZ_FIPS, width=3, side= "left", pad = "0")
+
+unite(mystorms, FIPS, STATE_FIPS, CZ_FIPS, remove = TRUE)
+
+str(mystorms)
+
+head(mystorms)
+
+#Change all the column names to lower case
+
+rename_all(mystorms,tolower)
+
+data("state")
+us_state_info<-data.frame(state=state.name, region=state.region, area=state.area)
+
+newdataframe <- data.frame(table(storms$STATE))
+head(newdataframe)
+newset1<-rename(newdataframe, c("state"="Var1"))
+newset1 <- mutate(.data = newset1, 
+                   state=str_to_title(string=state))
+newset1$state[1:10]
+
+merged <- merge(x=newset1,y=us_state_info,by.x="state", by.y="state")
+
+library(ggplot2)
+storm_plot <- ggplot(merged,aes(x=area, y=Freq)) +
+  geom_point(aes(color=region)) +
+  labs(x="Land area (square miles)",
+       y = "# of storm events in 1984")
+storm_plot
